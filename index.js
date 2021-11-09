@@ -31,6 +31,21 @@ async function run(){
             res.json(appointments)
         })
 
+        // get admin
+
+        app.get('/users', async(req, res) => {
+            const email = req.query.email;
+            console.log(email);
+            const filter = {email: email, role: 'admin'};
+            const result = await usersCollection.findOne(filter);
+            console.log(result);
+            let isAdmin = false;
+            if(result?.role === 'admin'){
+                isAdmin = true;
+            }
+            res.json({admin: isAdmin});
+        })
+
         // user post
         app.post('/users', async(req, res) => {
             const user = req.body;
@@ -47,9 +62,17 @@ async function run(){
             res.json(result)
         })
 
+        // make admin
+        app.put('/users/admin', async (req, res) => {
+            const user = req.body;
+            const filter = {email: user.email};
+            const updateDoc = {$set: {role: 'admin'}};
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.json(result);
+        })
+
         app.post('/appointments', async (req, res) => {
             const bookingInfo = req.body;
-            console.log(bookingInfo);
             const result = await appointmentsCollection.insertOne(bookingInfo);
             // console.log(result);
             res.send(result);
