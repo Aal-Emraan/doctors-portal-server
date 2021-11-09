@@ -1,10 +1,30 @@
 const express = require('express');
+const admin = require("firebase-admin");
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require('cors');
 // require('dotenv').config()
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
+
+
+const serviceAccount = require('./doctors-portal-firebase-adminsdk.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+async function verifyToken(req, res, next){
+    if(req.headers?.authorization?.startsWith('Bearar ')){
+        const token = req.headers.authorization.split(' ')[1];
+        try{
+            const decodedUser = await admin.auth().verifyIdToken(token);
+            req.decodedEmail = decodedUser.email;
+        }
+        catch{}
+    }
+    next();
+}
 
 // middleware
 app.use(cors());
@@ -63,12 +83,21 @@ async function run(){
         })
 
         // make admin
-        app.put('/users/admin', async (req, res) => {
+        app.put('/users/admin', verifyToken, async (req, res) => {
             const user = req.body;
-            const filter = {email: user.email};
-            const updateDoc = {$set: {role: 'admin'}};
-            const result = await usersCollection.updateOne(filter, updateDoc);
-            res.json(result);
+            const requesterEmail = req.decodedEmail;
+            if(requesterEmail){
+                const requester = await usersCollection.findOne({email: requesterEmail});
+                if(requester.role === 'admin'){
+                    const filter = {email: user.email};
+                    const updateDoc = {$set: {role: 'admin'}};
+                    const result = await usersCollection.updateOne(filter, updateDoc);
+                    res.json(result);
+                }
+            }else{
+                res.status(403).json({message: 'You do not have permission to make admin.'})
+            }
+
         })
 
         app.post('/appointments', async (req, res) => {
