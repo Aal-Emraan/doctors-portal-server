@@ -59,11 +59,18 @@ async function run() {
 
 		// get single appointment
 		app.get("/appointment/:id", async (req, res) => {
-			console.log(req.params.id);
 			const result = await appointmentsCollection.findOne({
 				_id: ObjectId(req.params.id),
 			});
 			res.json(result);
+		});
+
+		// get doctors
+		app.get("/doctors", async (req, res) => {
+			const cursor = doctorsCollection.find({});
+			const doctors = await cursor.toArray();
+			console.log(doctors);
+			res.json(doctors);
 		});
 
 		// add doctors
@@ -87,10 +94,8 @@ async function run() {
 
 		app.get("/users", async (req, res) => {
 			const email = req.query.email;
-			console.log(email);
 			const filter = { email: email, role: "admin" };
 			const result = await usersCollection.findOne(filter);
-			console.log(result);
 			let isAdmin = false;
 			if (result?.role === "admin") {
 				isAdmin = true;
