@@ -3,7 +3,7 @@ const admin = require("firebase-admin");
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require('cors');
-// require('dotenv').config()
+require('dotenv').config();
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
 
@@ -44,8 +44,9 @@ async function run(){
 
         app.get('/appointments', async (req, res) => {
             const email = req.query.email;
-            const date = new Date(req.query.date).toLocaleDateString();
-            const query = {email: email};
+            const date = req.query.date;
+            const query = {email, date};
+            console.log(date);
             const allAppointments = appointmentsCollection.find(query);
             const appointments = await allAppointments.toArray();
             res.json(appointments)
