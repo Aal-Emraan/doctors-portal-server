@@ -7,6 +7,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
+const fileUpload = require("express-fileupload");
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_TOKEN);
 
@@ -28,6 +29,7 @@ async function verifyToken(req, res, next) {
 // middleware
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wd6nd.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -43,6 +45,7 @@ async function run() {
 		const database = client.db("doctorsPortal");
 		const appointmentsCollection = database.collection("allAppointments");
 		const usersCollection = database.collection("users");
+		const doctorsCollection = database.collection("doctors");
 
 		app.get("/appointments", async (req, res) => {
 			const email = req.query.email;
@@ -60,6 +63,23 @@ async function run() {
 			const result = await appointmentsCollection.findOne({
 				_id: ObjectId(req.params.id),
 			});
+			res.json(result);
+		});
+
+		// add doctors
+		app.post("/adddoctor", async (req, res) => {
+			const { name, email } = req.body;
+			const pic = req.files.image;
+			const picData = pic.data;
+			const encodedPic = picData.toString("base64");
+			const imageBuffer = Buffer.from(encodedPic, "base64");
+			const doctor = {
+				name,
+				email,
+				image: imageBuffer,
+			};
+
+			const result = await doctorsCollection.insertOne(doctor);
 			res.json(result);
 		});
 
